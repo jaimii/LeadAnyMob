@@ -1,5 +1,7 @@
-# Lead Any Mob
-You will be able to attach leads to all kinds of creatures, such as villagers, zombies, and bats.
+## Lead Any Mob is a Minecraft plugin that allows players to lead any mob.
+Maintained for Project: Kompass. (Updated for 1.21.11.) 
+
+Original plugin by [amu0](https://github.com/amu0/LeadAnyMob).
 
 ![ScreenShot](./images/screenshot.png)
 
@@ -9,4 +11,4 @@ You will be able to attach leads to all kinds of creatures, such as villagers, z
   - All players have this permission by default
 
 ## Discord
-[Support Discord](https://discord.gg/NDpvZZBCZG)
+[Support Discord Of Original Creator](https://discord.gg/NDpvZZBCZG)
