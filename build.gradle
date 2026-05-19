@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'xyz.amudev'
-version = '1.0.1'
+version = '1.0.2'
 
 repositories {
     mavenCentral()
@@ -41,9 +41,9 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    def props = [version: version]
-    inputs.properties props
-    filteringCharset 'UTF-8'
+    var props = [version: version]
+    inputs.properties(props)
+    filteringCharset = 'UTF-8'
     filesMatching('plugin.yml') {
         expand props
     }
