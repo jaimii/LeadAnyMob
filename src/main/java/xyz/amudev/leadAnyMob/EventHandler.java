@@ -136,7 +136,7 @@ public class EventHandler implements Listener {
                 Entity holder = living.getLeashHolder();
                 if (holder == null) return;
 
-                event.setDropLead(false);
+                event.setDropLeash(false);
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     // Reattach the lead
