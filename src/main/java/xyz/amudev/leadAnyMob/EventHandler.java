@@ -136,9 +136,15 @@ public class EventHandler implements Listener {
                 Entity holder = living.getLeashHolder();
                 if (holder == null) return;
 
-                event.setDropLeash(false);
-
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    // SPIGOT WORKAROUND: Find the dropped lead item on the ground and delete it
+                    for (Entity nearby : living.getNearbyEntities(2, 2, 2)) {
+                        if (nearby instanceof Item droppedItem && droppedItem.getItemStack().getType() == Material.LEAD) {
+                            droppedItem.remove(); // Delete the duplicated lead
+                            break; // Stop after deleting one, in case there are other leads on the ground
+                        }
+                    }
+
                     // Reattach the lead
                     living.setLeashHolder(holder);
 
@@ -147,6 +153,6 @@ public class EventHandler implements Listener {
                     }
                 }, 1L);
             }
-        }
+        ;}
     }
 }
