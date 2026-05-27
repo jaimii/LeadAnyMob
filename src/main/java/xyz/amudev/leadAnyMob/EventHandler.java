@@ -1,5 +1,6 @@
 package xyz.amudev.leadAnyMob;
 
+import io.papermc.paper.entity.Leashable; // Native Paper interface for 1.21.11
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -132,27 +133,31 @@ public class EventHandler implements Listener {
         if (event.getReason() == EntityUnleashEvent.UnleashReason.DISTANCE) {
             Entity entity = event.getEntity();
 
-            if (entity instanceof LivingEntity living && !leashableInVanilla.contains(living.getType())) {
-                Entity holder = living.getLeashHolder();
+            // Using the native 1.21.11 Leashable interface to support both custom mobs and modern vanilla leashable entities
+            if (entity instanceof Leashable leashed) {
+                Entity holder = leashed.getLeashHolder();
                 if (holder == null) return;
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    // SPIGOT WORKAROUND: Find the dropped lead item on the ground and delete it
-                    for (Entity nearby : living.getNearbyEntities(2, 2, 2)) {
+                    // Safety check to ensure entities did not unload, despawn, or leave the game during the tick delay
+                    if (!entity.isValid() || !holder.isValid()) return;
+                    if (holder instanceof Player player && !player.isOnline()) return;
+
+                    // 1. Find and remove the dropped lead item at the entity's current location before teleporting
+                    for (Entity nearby : entity.getNearbyEntities(2, 2, 2)) {
                         if (nearby instanceof Item droppedItem && droppedItem.getItemStack().getType() == Material.LEAD) {
-                            droppedItem.remove(); // Delete the duplicated lead
-                            break; // Stop after deleting one, in case there are other leads on the ground
+                            droppedItem.remove(); // Delete the duplicated lead drop
+                            break;
                         }
                     }
 
-                    // Reattach the lead
-                    living.setLeashHolder(holder);
+                    // 2. Teleport the entity back close to the leash holder
+                    entity.teleport(holder.getLocation().add(0, 1, 0));
 
-                    if (living instanceof Ghast || living instanceof Phantom || living instanceof HappyGhast) {
-                        living.teleport(holder.getLocation().add(0, 1, 0));
-                    }
+                    // 3. Reattach the lead
+                    leashed.setLeashHolder(holder);
                 }, 1L);
             }
-        ;}
+        }
     }
 }
