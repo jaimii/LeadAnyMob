@@ -130,33 +130,40 @@ public class EventHandler implements Listener {
 
     @org.bukkit.event.EventHandler
     public void onLeadSnap(EntityUnleashEvent event) {
-        if (event.getReason() == EntityUnleashEvent.UnleashReason.DISTANCE) {
-            Entity entity = event.getEntity();
+        Entity entity = event.getEntity();
 
-            // Using the native 1.21.11 Leashable interface to support both custom mobs and modern vanilla leashable entities
-            if (entity instanceof Leashable leashed) {
-                Entity holder = leashed.getLeashHolder();
-                if (holder == null) return;
+        // 1. Safety check to make sure the entity is valid
+        if (!entity.isValid() || entity.isDead()) return;
 
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    // Safety check to ensure entities did not unload, despawn, or leave the game during the tick delay
-                    if (!entity.isValid() || !holder.isValid()) return;
-                    if (holder instanceof Player player && !player.isOnline()) return;
+        // Using the native 1.21.11 Leashable interface to support both custom mobs and modern vanilla leashable entities
+        if (entity instanceof Leashable leashed) {
+            Entity holder = leashed.getLeashHolder();
+            if (holder == null || !holder.isValid() || holder.isDead()) return;
 
-                    // 1. Find and remove the dropped lead item at the entity's current location before teleporting
-                    for (Entity nearby : entity.getNearbyEntities(2, 2, 2)) {
-                        if (nearby instanceof Item droppedItem && droppedItem.getItemStack().getType() == Material.LEAD) {
-                            droppedItem.remove(); // Delete the duplicated lead drop
-                            break;
-                        }
-                    }
+            // 2. Safety check: if the player is offline, allow the unleash to occur
+            if (holder instanceof Player player && !player.isOnline()) return;
 
-                    // 2. Teleport the entity back close to the leash holder
-                    entity.teleport(holder.getLocation().add(0, 1, 0));
+            EntityUnleashEvent.UnleashReason reason = event.getReason();
+            boolean isGlidingPlayer = holder instanceof Player player && player.isGliding();
 
-                    // 3. Reattach the lead
-                    leashed.setLeashHolder(holder);
-                }, 1L);
+            // 3. Allow manual player unleashes (right clicking the mob or fence) unless they are gliding
+            if (reason == EntityUnleashEvent.UnleashReason.PLAYER_UNLEASH) {
+                if (!isGlidingPlayer) {
+                    return; // Let the player unleash it normally
+                }
+            }
+
+            // 4. Intercept distance limits, firework boosts (often classified under UNKNOWN/DISTANCE),
+            // or when the leash holder is in Elytra flight
+            if (reason == EntityUnleashEvent.UnleashReason.DISTANCE ||
+                    reason == EntityUnleashEvent.UnleashReason.UNKNOWN ||
+                    isGlidingPlayer) {
+
+                // Cancel the event so the lead is never actually broken and no item is dropped
+                event.setCancelled(true);
+
+                // Instantly teleport the entity closer to the holder to prevent it from lagging behind
+                entity.teleport(holder.getLocation().add(0, 1, 0));
             }
         }
     }
